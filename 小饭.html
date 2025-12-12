@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小饭的抽奖池</title>
+<style>
+    body{margin:0;height:100vh;background:linear-gradient(135deg,#ff7e5f,#feb47b);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Microsoft YaHei",sans-serif;overflow:hidden;}
+    h1{font-size:4.5em;margin:10px;color:#fff;text-shadow:0 0 30px rgba(0,0,0,0.7);letter-spacing:5px;}
+    
+    #box{position:relative;width:680px;height:680px;margin:20px 0;}
+    #wheel{border-radius:50%;box-shadow:0 25px 80px rgba(0,0,0,0.8);}
+    
+    #pointer{
+        position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+        width:0;height:0;
+        border-left:56px solid transparent;
+        border-right:56px solid transparent;
+        border-bottom:130px solid #e91e63;
+        filter:drop-shadow(0 20px 30px #000);
+        transform-origin:center 350px;
+        transition:transform 4.8s cubic-bezier(0.17,0.67,0.15,0.99);
+        z-index:10;
+    }
+    
+    #btn{margin-top:20px;padding:22px 100px;font-size:36px;background:#e91e63;border:none;border-radius:80px;color:#fff;cursor:pointer;box-shadow:0 15px 40px rgba(233,30,99,0.6);}
+    #btn:active{transform:translateY(10px);}
+    #btn:disabled{background:#95a5a6;}
+    
+    /* 超大中奖弹层 */
+    #bigResult{
+        position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+        background:rgba(0,0,0,0.92);color:#fff;padding:60px 100px;border-radius:30px;
+        font-size:80px;font-weight:bold;text-align:center;line-height:1.4;
+        box-shadow:0 0 100px rgba(233,30,99,0.9);z-index:999;
+        transition:transform 0.8s cubic-bezier(0.18,0.89,0.32,1.28);
+        backdrop-filter:blur(15px);
+    }
+    #bigResult.show{transform:translate(-50%,-50%) scale(1);}
+    #bigResult span{color:#ff1744;font-size:1.2em;}
+</style>
+</head>
+<body>
+
+<h1>小饭的抽奖池</h1>
+<div id="box">
+    <canvas id="wheel" width="680" height="680"></canvas>
+    <div id="pointer"></div>
+</div>
+
+<button id="btn">开始抽奖！</button>
+
+<div id="bigResult"></div>
+
+<script>
+const prizes = ["古茗一杯","与我共享晚餐一次","保温杯一个","iPhone17一部","东北7天旅游体验","劳斯莱斯幻想一辆","餐巾纸一盒","谢谢参与","一枚耳光","鱼香肉丝一份","一次遛狗体验","草莓蛋糕一份"];
+const colors = ["#ff5252","#ff9800","#ffeb3b","#8bc34a","#00bcd4","#009688","#3f51b5","#9c27b0","#e91e63","#00acc1","#ab47bc","#5c6bc0"];
+
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const pointer = document.getElementById('pointer');
+const btn = document.getElementById('btn');
+const bigResult = document.getElementById('bigResult');
+
+let clickCount = 0;
+let spinning = false;
+let currentAngle = -90;
+
+// 画超大清晰转盘
+function drawWheel() {
+    const n = 12;
+    const deg = 360/n;
+    for(let i=0;i<n;i++){
+        const start = i*deg -90;
+        ctx.beginPath();
+        ctx.moveTo(340,340);
+        ctx.arc(340,340,325,start*Math.PI/180,(start+deg)*Math.PI/180);
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+        ctx.strokeStyle="#fff";
+        ctx.lineWidth=10;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(340,340);
+        ctx.rotate((start + deg/2)*Math.PI/180);
+        ctx.font="bold 32px Microsoft YaHei";
+        ctx.fillStyle="#fff";
+        ctx.strokeStyle="#000";
+        ctx.lineWidth=4;
+        ctx.textAlign="center";
+        // 文字描边 + 填充，超清晰
+        ctx.strokeText(prizes[i],210,12);
+        ctx.fillText(prizes[i],210,12);
+        ctx.restore();
+    }
+}
+
+function lottery() {
+    if(spinning) return;
+    spinning = true;
+    btn.disabled = true;
+    bigResult.classList.remove('show');
+
+    clickCount++;
+    const targetIndex = clickCount===1 ? 8 : (clickCount===2 ? 1 : 7);
+    const targetAngle = targetIndex * 30 - 90;
+
+    const extra = 360 * (9 + Math.random()*2);
+    const total = currentAngle + extra + (targetAngle - currentAngle%360 + 360)%360;
+
+    pointer.style.transform = `translateX(-50%) rotate(${total}deg)`;
+    currentAngle = targetAngle;
+
+    setTimeout(()=>{
+        spinning = false;
+        btn.disabled = false;
+        
+        // 超大弹层显示结果（谁都看得见！）
+        bigResult.innerHTML = `恭喜抽中<br><span>${prizes[targetIndex]}</span>`;
+        bigResult.classList.add('show');
+
+        if(clickCount===1){
+            btn.textContent = "再来一次";
+        }else{
+            btn.textContent = "次数用完啦~";
+            btn.disabled = true;
+        }
+    },5000);
+}
+
+drawWheel();
+pointer.style.transform = "translateX(-50%) rotate(-90deg)";
+btn.onclick = lottery;
+</script>
+</body>
+</html>
